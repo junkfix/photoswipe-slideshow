@@ -10,7 +10,7 @@ To use the plugin, import the module and create the plugin using the lightbox in
 ```
 <script type="module">
 import PhotoSwipeLightbox from 'photoswipe/dist/photoswipe-lightbox.esm.min.js';
-import PhotoSwipeSlideshow from 'photoswipe-fullscreen/photoswipe-slideshow.esm.js';
+import PhotoSwipeSlideshow from 'photoswipe-slideshow/photoswipe-slideshow.esm.min.js';
 
 const lightbox = new PhotoSwipeLightbox({
   gallerySelector: '#gallery',
