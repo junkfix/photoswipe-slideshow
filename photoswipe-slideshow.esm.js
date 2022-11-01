@@ -20,7 +20,7 @@ class PhotoSwipeSlideshow {
                 title: "Play/Pause [Space]",
                 order: 18,
                 isButton: true,
-                html: '<svg viewBox="-40 -40 600 600" aria-hidden="true" class="pswp__icn"><path  class="pswp__icn-play" d="M 110,420 440,250 110,78 v 172 z"/><path class="pswp__icn-pause" d="m 340,87 h 90 V 420 H 340 Z M 99,87 h 91 V 420 H 99 Z" style="display:none"/></svg>',
+                html: '<svg viewBox="-40 -40 600 600" aria-hidden="true" class="pswp__icn"><path class="pswp__icn-play" d="M 110,420 440,250 110,78 v 172 z"/><path class="pswp__icn-pause" d="m 340,87 h 90 V 420 H 340 Z M 99,87 h 91 V 420 H 99 Z" style="display:none"/></svg>',
                 onClick: (event, el) => {
                     this.player();
                 }
