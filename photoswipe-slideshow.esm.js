@@ -1,4 +1,4 @@
-// PhotoSwipe slideshow plugin v1.2
+// PhotoSwipe slideshow plugin v1.3
 // https://github.com/htmltiger/photoswipe-slideshow
 
 
