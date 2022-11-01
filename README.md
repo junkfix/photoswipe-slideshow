@@ -22,3 +22,4 @@ const slideshowPlugin = new PhotoSwipeSlideshow(lightbox,4000); //4 sec
 lightbox.init();
 </script>
 ```
+The default playback speed 4sec, can be changed using +/- when playing
