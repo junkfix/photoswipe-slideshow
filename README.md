@@ -18,7 +18,7 @@ const lightbox = new PhotoSwipeLightbox({
   pswpModule: () => import('photoswipe/dist/photoswipe.esm.js'),
 });
 
-const slideshowPlugin = new PhotoSwipeSlideshow(lightbox,4000); //4 sec
+const slideshowPlugin = new PhotoSwipeSlideshow(lightbox,4); //4 sec
 lightbox.init();
 </script>
 ```
