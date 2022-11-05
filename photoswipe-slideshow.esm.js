@@ -1,4 +1,4 @@
-/*! PhotoSwipe slideshow plugin v1.6  https://github.com/htmltiger/photoswipe-slideshow */
+/*! PhotoSwipe slideshow plugin v1.7  https://github.com/htmltiger/photoswipe-slideshow */
 
 class PhotoSwipeSlideshow {
 	constructor(lightbox, time) {
@@ -7,7 +7,8 @@ class PhotoSwipeSlideshow {
 		this.wakeo = null;
 		this.state = -1;
 		this.timert = 0;
-		this.time = time ? time : 4;
+		this.time = Number(localStorage.getItem('pswptime'));
+		this.time = this.time>0 ? this.time : (time ? time : 4);
 		this.lightbox = lightbox;
 		this.lightbox.on('init', () => {
 			this.init(this.lightbox.pswp);
@@ -90,6 +91,7 @@ class PhotoSwipeSlideshow {
 		}
 		if (k) {
 			this.time = Math.max(1, this.time + k);
+			localStorage.setItem('pswptime', this.time);
 			c = document.querySelector('.pswp__counter');
 			if (c) {
 				c.innerHTML = this.time + 's';
