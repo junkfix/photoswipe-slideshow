@@ -23,3 +23,5 @@ lightbox.init();
 </script>
 ```
 The default playback speed 4sec, can be changed using +/- when playing
+
+[Demo](https://codepen.io/htmltiger/pen/ExRgvqy)
