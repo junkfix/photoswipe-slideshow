@@ -13,6 +13,8 @@ const defaultOptions = {
 };
 
 export default class PhotoSwipeSlideshow {
+    slideshow_is_running = false;
+
     constructor(lightbox, options) {
         this.options = {
             ...defaultOptions,
@@ -37,20 +39,21 @@ export default class PhotoSwipeSlideshow {
                 order: options.buttonOrder,  // default: counter=5, image=7, zoom=10, info=15, close=20
                 isButton: true,
                 html: '<i class="fa-solid fa-play"></i>',
-                onClick: (event, el) => {
-                    this.toggleSlideshow();
+                onClick: (event, buttonElement) => {
+                    this.setSlideshowState(buttonElement);
                 }
             });
         });
     }
 
     /**
-     * Automatically start a slideshow.
+     * Toggle the slideshow state and switch the button's icon.
      */
-    toggleSlideshow = (event, el) => {
-        const { pswp, options } = this;
+    setSlideshowState = (buttonElement) => {
+        this.slideshow_is_running = !this.slideshow_is_running;
 
-        // https://github.com/dimsemenov/PhotoSwipe/issues/753#issuecomment-182362487
-        setInterval(() => {pswp.next();}, options.delayMs);
+        const icon = buttonElement.getElementsByTagName("i")[0];
+        icon.classList.remove(this.slideshow_is_running ? "fa-play" : "fa-stop");
+        icon.classList.add(this.slideshow_is_running ? "fa-stop" : "fa-play");
     }
 }
