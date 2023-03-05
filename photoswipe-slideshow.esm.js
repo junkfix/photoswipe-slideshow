@@ -9,7 +9,7 @@
 const defaultOptions = {
     delayMs: 1000,
     buttonTitle: 'Toggle slideshow',
-    buttonOrder: 8,
+    buttonOrder: 6,  // default: counter=5, image=7, zoom=10, info=15, close=20
 };
 
 export default class PhotoSwipeSlideshow {
@@ -25,32 +25,55 @@ export default class PhotoSwipeSlideshow {
         '<path id="pswp__slideshow-icn-stop" transform="translate(6,6)" style="scale:0.8; display:none;" d="M0 10.667C0 7.725 2.392 5.333 5.333 5.333H26.667c2.942 0 5.333 2.392 5.333 5.333V32c0 2.942 -2.392 5.333 -5.333 5.333H5.333c-2.942 0 -5.333 -2.392 -5.333 -5.333V10.667z" />' +
         '</svg>';
 
+    /**
+     * Set up PhotoSwipe lightbox event binds.
+     *
+     * @param {PhotoSwipeLightbox} lightbox PhotoSwipe lightbox instance.
+     * @param {Object} options              Options to change default behaviour.
+     */
     constructor(lightbox, options) {
         this.options = {
             ...defaultOptions,
             ...options
         };
-    
+
         this.lightbox = lightbox;
-    
-        this.lightbox.on('init', () => {
-            this.pswp = this.lightbox.pswp;
+
+        // Bind plugin initialization with PhotoSwipe's initialization.
+        lightbox.on('init', () => {
+            this.pswp = lightbox.pswp;
             this.initPlugin();
         });
-    }
-  
-    initPlugin = () => {
-        const { pswp, options, buttonSVG } = this;
 
+        // When slide is switched by the slideshow, start a timer for switching to the next slide.
+        lightbox.on('change', () => {
+            if (this.slideshow_is_running) {
+                setTimeout(this.gotoNextSlide, this.options.delayMs);
+            }
+        });
+
+        // Close the slideshow when closing PhotoSwipe.
+        lightbox.on('close', () => {
+            this.slideshow_is_running = false;
+        });
+    }
+
+    /**
+     * Set up PhotoSwipe instance event binds.
+     */
+    initPlugin = () => {
+        const { pswp, options, buttonSVG, setSlideshowState } = this;
+
+        // Add a button to the PhotoSwipe UI.
         pswp.on('uiRegister', () => {
             pswp.ui.registerElement({
                 name: 'slideshow',
                 title: options.buttonTitle,
-                order: options.buttonOrder,  // default: counter=5, image=7, zoom=10, info=15, close=20
+                order: options.buttonOrder,
                 isButton: true,
                 html: buttonSVG,
                 onClick: (event, buttonElement) => {
-                    this.setSlideshowState();
+                    setSlideshowState();
                 }
             });
         });
@@ -60,13 +83,34 @@ export default class PhotoSwipeSlideshow {
      * Toggle the slideshow state and switch the button's icon.
      */
     setSlideshowState = () => {
+        const { gotoNextSlide, options } = this;
+
+        // Update the slideshow running state.
         this.slideshow_is_running = !this.slideshow_is_running;
 
+        // Go to next slide after some wait time.
+        // The `afterChange` listener triggers further timers.
+        if (this.slideshow_is_running) {
+            setTimeout(gotoNextSlide, options.delayMs);
+        }
+
+        // Update icon to show the slideshow running state.
         document.getElementById('pswp__slideshow-icn-play').style.display = (
             this.slideshow_is_running ? "none" : "inline-block"
         );
         document.getElementById('pswp__slideshow-icn-stop').style.display = (
             this.slideshow_is_running ? "inline-block" : "none"
         );
+    }
+
+    /**
+     * Go to the next slide, if the slideshow is currently running.
+     */
+    gotoNextSlide = () => {
+        const { slideshow_is_running, pswp } = this;
+
+        if (slideshow_is_running) {
+            pswp.next();
+        }
     }
 }
