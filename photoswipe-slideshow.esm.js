@@ -1,15 +1,23 @@
 /**
- * Slideshow plugin for the PhotoSwipe v5
+ * Slideshow plugin for the PhotoSwipe v5.
  *
  * Inspired by https://github.com/dimsemenov/PhotoSwipe/issues/753
  *
  * https://github.com/dpet23/photoswipe-slideshow
  */
 
+/**
+ * Default settings for the plugin.
+ *
+ * @property {number} delayMs           Slideshow delay in milliseconds.
+ * @property {string} buttonTitle       Title of the slideshow toggle button.
+ * @property {number} buttonOrder       Position where to place the slideshow toggle button.
+ * @property {Boolean} showProgressBar  Whether to show a progress bar indicating the time until slide change.
+ */
 const defaultOptions = {
-    delayMs: 1000,
+    delayMs: 5000,
     buttonTitle: 'Toggle slideshow',
-    buttonOrder: 6,  // default: counter=5, image=7, zoom=10, info=15, close=20
+    buttonOrder: 6, // default: counter=5, image=7, zoom=10, info=15, close=20
     showProgressBar: true,
 };
 
@@ -40,7 +48,7 @@ export default class PhotoSwipeSlideshow {
     constructor(lightbox, options) {
         this.options = {
             ...defaultOptions,
-            ...options
+            ...options,
         };
 
         this.lightbox = lightbox;
@@ -71,7 +79,7 @@ export default class PhotoSwipeSlideshow {
             this.slideshow_is_running = false;
             this.resetProgressBar();
         });
-    }
+    };
 
     /**
      * Set up PhotoSwipe gallery event binds.
@@ -83,20 +91,20 @@ export default class PhotoSwipeSlideshow {
         pswp.on('uiRegister', () => {
             // Add a button to the PhotoSwipe UI for toggling the slideshow state.
             pswp.ui.registerElement({
-                name: 'slideshow',  // button.pswp__button--slideshow
+                name: 'slideshow', // button.pswp__button--slideshow
                 title: options.buttonTitle,
                 order: options.buttonOrder,
                 isButton: true,
                 html: slideshowButtonSVG,
                 onClick: (event, buttonElement) => {
                     setSlideshowState();
-                }
+                },
             });
 
             // Add a slideshow progress bar to the PhotoSwipe UI.
             if (options.showProgressBar) {
                 pswp.ui.registerElement({
-                    name: 'slideshow-progress-bar',  // div.pswp__slideshow-progress-bar
+                    name: 'slideshow-progress-bar', // div.pswp__slideshow-progress-bar
                     appendTo: 'wrapper',
                     onInit: (progressBarElement, pswpInstance) => {
                         this.slideshowProgressBarElement = progressBarElement;
@@ -124,13 +132,13 @@ export default class PhotoSwipeSlideshow {
         }
 
         // Update icon to show the slideshow running state.
-        document.getElementById('pswp__slideshow-icn-play').style.display = (
-            this.slideshow_is_running ? "none" : "inline-block"
-        );
-        document.getElementById('pswp__slideshow-icn-stop').style.display = (
-            this.slideshow_is_running ? "inline-block" : "none"
-        );
-    }
+        document.getElementById('pswp__slideshow-icn-play').style.display = this.slideshow_is_running
+            ? 'none'
+            : 'inline-block';
+        document.getElementById('pswp__slideshow-icn-stop').style.display = this.slideshow_is_running
+            ? 'inline-block'
+            : 'none';
+    };
 
     /**
      * Go to the next slide, if the slideshow is currently running.
@@ -147,7 +155,7 @@ export default class PhotoSwipeSlideshow {
         }, nextSlideTimeout);
 
         animateProgressBar(nextSlideTimeout);
-    }
+    };
 
     /**
      * Calculate the time before going to the next slide.
@@ -161,7 +169,7 @@ export default class PhotoSwipeSlideshow {
         const { pswp, options } = this;
 
         const slideContent = pswp.currSlide.content;
-        const isVideoContent = (slideContent && slideContent.data && slideContent.data.type === 'video');
+        const isVideoContent = slideContent && slideContent.data && slideContent.data.type === 'video';
 
         // Calculate remaining duration for videos.
         if (isVideoContent) {
@@ -177,15 +185,22 @@ export default class PhotoSwipeSlideshow {
 
         // Use the default delay for images.
         return options.delayMs;
-    }
+    };
 
     /**
      * Progressively fill the slideshow progress bar as the slide timer progresses.
      *
      * @param {number} nextSlideTimeout The time before going to the next slide, in milliseconds.
      */
-    animateProgressBar = (nextSlideTimeout) => {
-        const { options, resetProgressBar, slideshowProgressBarWidthMax, slideshowProgressBarUpdateIntervalMs, stopProgressbar, setProgressBarWidth } = this;
+    animateProgressBar = nextSlideTimeout => {
+        const {
+            options,
+            resetProgressBar,
+            slideshowProgressBarWidthMax,
+            slideshowProgressBarUpdateIntervalMs,
+            stopProgressbar,
+            setProgressBarWidth,
+        } = this;
 
         if (options.showProgressBar) {
             // Ensure the progress bar starts in a clean state for this slide.
@@ -208,24 +223,24 @@ export default class PhotoSwipeSlideshow {
                 }
             }, slideshowProgressBarUpdateIntervalMs);
         }
-    }
+    };
 
     /**
      * Set the width of the slideshow progress bar.
      *
      * @param {number} width The new width, as a percentage.
      */
-    setProgressBarWidth = (width) => {
+    setProgressBarWidth = width => {
         this.slideshowProgressBarWidth = width;
         this.slideshowProgressBarElement.style.width = `${width}%`;
-    }
+    };
 
     /**
      * Stop animating the progress bar by clearing the timed function calls.
      */
     stopProgressbar = () => {
         clearInterval(this.slideshowProgressBarIntervalID);
-    }
+    };
 
     /**
      * Fully reset the progress bar: stop the animation and reset the width.
@@ -235,5 +250,5 @@ export default class PhotoSwipeSlideshow {
             this.stopProgressbar();
             this.setProgressBarWidth(0);
         }
-    }
+    };
 }
