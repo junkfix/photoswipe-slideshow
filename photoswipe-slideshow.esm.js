@@ -39,16 +39,24 @@ export default class PhotoSwipeSlideshow {
 
         this.lightbox = lightbox;
 
-        // Bind plugin initialization with PhotoSwipe's initialization.
+        // Set up lightbox and gallery event binds.
+        this.initLightboxEvents();
         lightbox.on('init', () => {
             this.pswp = lightbox.pswp;
-            this.initPlugin();
+            this.initGalleryEvents();
         });
+    }
+
+    /**
+     * Set up PhotoSwipe lightbox event binds.
+     */
+    initLightboxEvents = () => {
+        const { lightbox, gotoNextSlide, getTimeout } = this;
 
         // When slide is switched by the slideshow, start a timer for switching to the next slide.
         lightbox.on('change', () => {
             if (this.slideshow_is_running) {
-                setTimeout(this.gotoNextSlide, this.options.delayMs);
+                setTimeout(gotoNextSlide, getTimeout());
             }
         });
 
@@ -59,9 +67,9 @@ export default class PhotoSwipeSlideshow {
     }
 
     /**
-     * Set up PhotoSwipe instance event binds.
+     * Set up PhotoSwipe gallery event binds.
      */
-    initPlugin = () => {
+    initGalleryEvents = () => {
         const { pswp, options, buttonSVG, setSlideshowState } = this;
 
         // Add a button to the PhotoSwipe UI.
@@ -83,7 +91,7 @@ export default class PhotoSwipeSlideshow {
      * Toggle the slideshow state and switch the button's icon.
      */
     setSlideshowState = () => {
-        const { gotoNextSlide, options } = this;
+        const { gotoNextSlide, getTimeout } = this;
 
         // Update the slideshow running state.
         this.slideshow_is_running = !this.slideshow_is_running;
@@ -91,7 +99,7 @@ export default class PhotoSwipeSlideshow {
         // Go to next slide after some wait time.
         // The `afterChange` listener triggers further timers.
         if (this.slideshow_is_running) {
-            setTimeout(gotoNextSlide, options.delayMs);
+            setTimeout(gotoNextSlide, getTimeout());
         }
 
         // Update icon to show the slideshow running state.
@@ -112,5 +120,35 @@ export default class PhotoSwipeSlideshow {
         if (slideshow_is_running) {
             pswp.next();
         }
+    }
+
+    /**
+     * Calculate the time before going to the next slide.
+     *
+     * For images, use the default delay time.
+     * For videos, calculate the remaining duration.
+     *
+     * @return {number} Timeout value in milliseconds.
+     */
+    getTimeout = () => {
+        const { pswp, options } = this;
+
+        const slideContent = pswp.currSlide.content;
+        const isVideoContent = (slideContent && slideContent.data && slideContent.data.type === 'video');
+
+        // Calculate remaining duration for videos.
+        if (isVideoContent) {
+            const duration = slideContent.element.duration;
+            const currentTime = slideContent.element.currentTime;
+
+            if (isNaN(duration) || isNaN(currentTime)) {
+                // Fall back to default delay if video hasn't been loaded yet.
+                return options.delayMs;
+            }
+            return (duration - currentTime) * 1000;
+        }
+
+        // Use the default delay for images.
+        return options.delayMs;
     }
 }
