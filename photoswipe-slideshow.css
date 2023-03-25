@@ -2,7 +2,4 @@ div.pswp__slideshow-progress-bar {
     height: 5px;
     background-color: white;
     border: 1px solid black;
-
-    /* Keep the progress bar visible when the PhotoSwipe UI is hidden due to inactivity. */
-    opacity: 1 !important;
 }

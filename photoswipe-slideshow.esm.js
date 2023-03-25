@@ -9,16 +9,18 @@
 /**
  * Default settings for the plugin.
  *
- * @property {number} delayMs           Slideshow delay in milliseconds.
- * @property {string} buttonTitle       Title of the slideshow toggle button.
- * @property {number} buttonOrder       Position where to place the slideshow toggle button.
- * @property {Boolean} showProgressBar  Whether to show a progress bar indicating the time until slide change.
+ * @property {number} delayMs               Slideshow delay in milliseconds.
+ * @property {string} buttonTitle           Title of the slideshow toggle button.
+ * @property {number} buttonOrder           Position where to place the slideshow toggle button.
+ * @property {Boolean} showProgressBar      Whether to show a progress bar indicating the time until slide change.
+ * @property {Boolean} autoHideProgressBar  Whether the progress bar can be hidden along with the UI.
  */
 const defaultOptions = {
     delayMs: 5000,
     buttonTitle: 'Toggle slideshow',
     buttonOrder: 6, // default: counter=5, image=7, zoom=10, info=15, close=20
     showProgressBar: true,
+    autoHideProgressBar: false,
 };
 
 export default class PhotoSwipeSlideshow {
@@ -109,6 +111,9 @@ export default class PhotoSwipeSlideshow {
                     onInit: (progressBarElement, pswpInstance) => {
                         this.slideshowProgressBarElement = progressBarElement;
                         this.setProgressBarWidth(0);
+                        if (!options.autoHideProgressBar) {
+                            progressBarElement.style.opacity = 1;
+                        }
                     },
                 });
             }
