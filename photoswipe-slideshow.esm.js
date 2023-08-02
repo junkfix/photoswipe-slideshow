@@ -60,16 +60,23 @@ class PhotoSwipeSlideshow {
 
             // Add custom keyboard bindings.
             pswp.events.add(document, 'keydown', e => {
-                const k = e.keyCode;
-                if (k == 32) {  // Space
-                    this.player();
-                    e.preventDefault();
-                }
-                if (k == 38 || k == 107 || k == 187) {  // ArrowUp || NumpadAdd || Equal
-                    this.timer(1);
-                }
-                if (k == 40 || k == 109 || k == 189) {  // ArrowDown || NumpadSubtract || Minus
-                    this.timer(-1);
+                switch (e.code) {
+                    case 'Space':
+                        this.player();
+                        e.preventDefault();
+                        break;
+
+                    case 'ArrowUp':
+                    case 'NumpadAdd':
+                    case 'Equal':
+                        this.timer(1);
+                        break;
+
+                    case 'ArrowDown':
+                    case 'NumpadSubtract':
+                    case 'Minus':
+                        this.timer(-1);
+                        break;
                 }
             });
         });
