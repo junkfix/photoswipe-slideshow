@@ -115,9 +115,7 @@ class PhotoSwipeSlideshow {
             this.timer();
         } else {
             // Stopping the slideshow: reset the progress bar and timer.
-            this.toggleProgressBar(0);
-            clearTimeout(this.slideshowTimerID);
-            this.slideshowTimerID = null;
+            this.resetSlideshow();
         }
 
         // Update icon to reflect the slideshow state.
@@ -134,12 +132,7 @@ class PhotoSwipeSlideshow {
      * @param {Number | undefined} lengthDelta Amount to change the slideshow length.
      */
     timer(lengthDelta) {
-        // Reset the current timer progress.
-        this.toggleProgressBar(0);
-        if (this.slideshowTimerID) {
-            clearTimeout(this.slideshowTimerID);
-            this.slideshowTimerID = null;
-        }
+        this.resetSlideshow();
 
         // Don't restart the timer if the slideshow isn't running.
         if (this.state < 1) {
@@ -233,6 +226,17 @@ class PhotoSwipeSlideshow {
         }
 
         this.wakeLockState = state;
+    }
+
+    /**
+     * Stop the slideshow by resetting the progress bar and timer.
+     */
+    resetSlideshow() {
+        this.toggleProgressBar(0);
+        if (this.slideshowTimerID) {
+            clearTimeout(this.slideshowTimerID);
+            this.slideshowTimerID = null;
+        }
     }
 }
 
