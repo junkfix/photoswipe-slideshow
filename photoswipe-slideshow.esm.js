@@ -1,14 +1,34 @@
 /*! Slideshow plugin for PhotoSwipe v5.  https://github.com/dpet23/photoswipe-slideshow */
 
+/**
+ * Default settings for the plugin.
+ *
+ * @property {number} delaySec      Slideshow delay in seconds.
+ * @property {number} buttonOrder   Position where to place the slideshow toggle button.
+ */
+const defaultOptions = {
+    delaySec: 4,
+    buttonOrder: 18, // default: counter=5, image=7, zoom=10, info=15, close=20
+};
+
 class PhotoSwipeSlideshow {
 
     /**
      * Set up PhotoSwipe lightbox event binds.
      *
      * @param {PhotoSwipeLightbox} lightbox PhotoSwipe lightbox instance.
-     * @param {Number} time                 Slideshow delay in seconds.
+     * @param {object} options              Options to change default behaviour.
      */
-    constructor(lightbox, time) {
+    constructor(lightbox, options) {
+        this.options = {
+            ...defaultOptions,
+            ...options,
+        };
+
+        // Use the stored slideshow length, if it's been saved to Local Storage.
+        // Otherwise, use the length specified by the caller, or fall back to the default value.
+        this.options.delaySec = Number(localStorage.getItem('pswptime')) || this.options.delaySec;
+
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
             'beforeend',
@@ -20,8 +40,6 @@ class PhotoSwipeSlideshow {
         this.wakeLockSentinel = null;
         this.state = -1; // <0 (undefined) // ==0 (paused) // >0 (running)
         this.slideshowTimerID = 0;
-        this.time = Number(localStorage.getItem('pswptime'));
-        this.time = this.time > 0 ? this.time : time ? time : 4;
         this.lightbox = lightbox;
 
         // Set up lightbox and gallery event binds.
@@ -42,8 +60,8 @@ class PhotoSwipeSlideshow {
             // Add a button to the PhotoSwipe UI for toggling the slideshow state.
             pswp.ui.registerElement({
                 name: 'playpause-button', // pswp__button--playpause-button
-                title: 'Play [Space] Time +/-',
-                order: 18, // default: counter=5, image=7, zoom=10, info=15, close=20
+                title: 'Toggle slideshow [Space] Time +/-',
+                order: this.options.buttonOrder,
                 isButton: true,
                 html: '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32"><use class="pswp__icn-shadow" xlink:href="#pswp__icn-pause"/><use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/><path id="pswp__icn-play" d="M7.4 25 25 16 7.4 6.6Z" /><path id="pswp__icn-pause" style="display:none" d="m7 7h4l0 18h-4zm14 0h4v18h-4z"/></svg>',
                 onClick: (event, el) => {
@@ -129,7 +147,7 @@ class PhotoSwipeSlideshow {
     /**
      * Manage the slideshow timer.
      *
-     * @param {Number | undefined} lengthDelta Amount to change the slideshow length.
+     * @param {number | undefined} lengthDelta Amount to change the slideshow length.
      */
     timer(lengthDelta) {
         this.resetSlideshow();
@@ -142,13 +160,13 @@ class PhotoSwipeSlideshow {
         // Change the slideshow length.
         if (lengthDelta) {
             // Save the updated slideshow length.
-            this.time = Math.max(1, this.time + lengthDelta);
-            localStorage.setItem('pswptime', this.time);
+            this.options.delaySec = Math.max(1, this.options.delaySec + lengthDelta);
+            localStorage.setItem('pswptime', this.options.delaySec);
 
             // Show the current slideshow length.
             const slideCounterElement = document.querySelector('.pswp__counter');
             if (slideCounterElement) {
-                slideCounterElement.innerHTML = this.time + 's';
+                slideCounterElement.innerHTML = this.options.delaySec + 's';
             }
         }
 
@@ -156,7 +174,7 @@ class PhotoSwipeSlideshow {
             this.slideshowTimerID = setTimeout(() => {this.timer()}, 200);
         } else {
             // Start the slideshow timer and go to the next slide.
-            this.slideshowTimerID = setTimeout(() => {this.timer()}, this.time * 1000);
+            this.slideshowTimerID = setTimeout(() => {this.timer()}, this.options.delaySec * 1000);
             if (!lengthDelta) {
                 pswp.next();
             }
@@ -167,13 +185,13 @@ class PhotoSwipeSlideshow {
     /**
      * Show or hide the slideshow progress bar.
      *
-     * @param {Number | undefined} code Functionality: 2==start, 1==running, 0==stop.
+     * @param {number | undefined} code Functionality: 2==start, 1==running, 0==stop.
      */
     toggleProgressBar(code) {
         const slideshowProgressBarWrapper = document.querySelector('.pswp__time');
         if (code) {
             if (code == 2) {
-                slideshowProgressBarWrapper.innerHTML = `<div class="pswp__timer" style="transition:width ${this.time}s;"/>`;
+                slideshowProgressBarWrapper.innerHTML = `<div class="pswp__timer" style="transition:width ${this.options.delaySec}s;"/>`;
                 setTimeout(() => {this.toggleProgressBar(1)}, 100);
                 return;
             }
@@ -188,7 +206,7 @@ class PhotoSwipeSlideshow {
      * Set wake lock if supported by the browser.
      * https://caniuse.com/wake-lock
      *
-     * @param {Number} state Requested wake lock state: 1==on, 0==off
+     * @param {number} state Requested wake lock state: 1==on, 0==off
      */
     toggleWakeLock(state) {
         if (this.wakeLockState == state) {
