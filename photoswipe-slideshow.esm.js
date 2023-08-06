@@ -40,9 +40,9 @@ class PhotoSwipeSlideshow {
         );
 
         // Set default parameters.
-        this.wakeLockState = false;
+        this.wakeLockIsRunning = false;
         this.wakeLockSentinel = null;
-        this.state = -1; // <0 (undefined) // ==0 (paused) // >0 (running)
+        this.slideshowIsRunning = false;
         this.slideshowTimerID = 0;
         this.lightbox = lightbox;
 
@@ -69,7 +69,7 @@ class PhotoSwipeSlideshow {
                 isButton: true,
                 html: '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32"><use class="pswp__icn-shadow" xlink:href="#pswp__icn-pause"/><use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/><path id="pswp__icn-play" d="M7.4 25 25 16 7.4 6.6Z" /><path id="pswp__icn-pause" style="display:none" d="m7 7h4l0 18h-4zm14 0h4v18h-4z"/></svg>',
                 onClick: (event, el) => {
-                    this.player();
+                    this.setSlideshowState();
                 },
             });
 
@@ -84,8 +84,7 @@ class PhotoSwipeSlideshow {
             pswp.events.add(document, 'keydown', e => {
                 switch (e.code) {
                     case 'Space':
-                        this.player();
-                        e.preventDefault();
+                        this.setSlideshowState();
                         break;
 
                     case 'ArrowUp':
@@ -100,29 +99,18 @@ class PhotoSwipeSlideshow {
                         this.timer(-1000);
                         break;
                 }
+
+                // Don't call the default binding for the key.
+                e.preventDefault();
             });
         });
 
         // Close the slideshow when closing PhotoSwipe.
         this.lightbox.on('close', () => {
-            if (this.state > 0) {
-                this.player();
+            if (this.slideshowIsRunning) {
+                this.setSlideshowState();
             }
         });
-    }
-
-    /**
-     * Define the slideshow state and start/stop the slideshow.
-     */
-    player() {
-        if (this.state < 0) {
-            setTimeout(() => {
-                this.setSlideshowState();
-            }, 600);
-            this.state = 0;
-        } else {
-            this.setSlideshowState();
-        }
     }
 
     /**
@@ -130,9 +118,9 @@ class PhotoSwipeSlideshow {
      */
     setSlideshowState() {
         // Invert the slideshow state.
-        this.state = this.state ? 0 : 1;
+        this.slideshowIsRunning = !this.slideshowIsRunning;
 
-        if (this.state) {
+        if (this.slideshowIsRunning) {
             // Starting the slideshow: go to next slide after some wait time.
             this.timer();
         } else {
@@ -141,11 +129,11 @@ class PhotoSwipeSlideshow {
         }
 
         // Update icon to reflect the slideshow state.
-        document.querySelector('#pswp__icn-pause').style.display = this.state ? 'inline' : 'none';
-        document.querySelector('#pswp__icn-play').style.display = this.state ? 'none' : 'inline';
+        document.querySelector('#pswp__icn-pause').style.display = this.slideshowIsRunning ? 'inline' : 'none';
+        document.querySelector('#pswp__icn-play').style.display = this.slideshowIsRunning ? 'none' : 'inline';
 
         // Toggle wake lock: prevent/allow the screen to turn off.
-        this.toggleWakeLock(this.state);
+        this.toggleWakeLock();
     }
 
     /**
@@ -174,7 +162,7 @@ class PhotoSwipeSlideshow {
         this.resetSlideshow();
 
         // Don't restart the timer if the slideshow isn't running.
-        if (this.state < 1) {
+        if (!this.slideshowIsRunning) {
             return;
         }
 
@@ -226,18 +214,16 @@ class PhotoSwipeSlideshow {
     /**
      * Set wake lock if supported by the browser.
      * https://caniuse.com/wake-lock
-     *
-     * @param {number} state Requested wake lock state: 1==on, 0==off
      */
-    toggleWakeLock(state) {
-        if (this.wakeLockState == state) {
+    toggleWakeLock() {
+        if (this.wakeLockIsRunning == this.slideshowIsRunning) {
             return;
         }
 
         if ('keepAwake' in screen) {
             // Use experimental API for older browsers.
             // This is a simple boolean flag.
-            screen.keepAwake = state;
+            screen.keepAwake = this.slideshowIsRunning;
         } else if ('wakeLock' in navigator) {
             // Use the Screen Wake Lock API for newer browsers.
 
@@ -257,14 +243,14 @@ class PhotoSwipeSlideshow {
                         // Update our state if the wake lock happens to be released by the browser.
                         this.wakeLockSentinel.addEventListener('release', () => {
                             this.wakeLockSentinel = null;
-                            this.wakeLockState = false;
+                            this.wakeLockIsRunning = false;
                         });
                     })
                     .catch(e => {}); // ignore errors if wake lock request fails.
             }
         }
 
-        this.wakeLockState = state;
+        this.wakeLockIsRunning = this.slideshowIsRunning;
     }
 
     /**
