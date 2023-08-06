@@ -1,13 +1,17 @@
 /*! Slideshow plugin for PhotoSwipe v5.  https://github.com/dpet23/photoswipe-slideshow */
 
+// Constants
+const INT32_MAX = 2147483647;  // 2^31 - 1
+const SLIDESHOW_DELAY_STORAGE_KEY = 'pswp_delay';
+
 /**
  * Default settings for the plugin.
  *
- * @property {number} delaySec      Slideshow delay in seconds.
+ * @property {number} delayMs       Slideshow delay in milliseconds.
  * @property {number} buttonOrder   Position where to place the slideshow toggle button.
  */
 const defaultOptions = {
-    delaySec: 4,
+    delayMs: 4000,
     buttonOrder: 18, // default: counter=5, image=7, zoom=10, info=15, close=20
 };
 
@@ -27,7 +31,7 @@ class PhotoSwipeSlideshow {
 
         // Use the stored slideshow length, if it's been saved to Local Storage.
         // Otherwise, use the length specified by the caller, or fall back to the default value.
-        this.options.delaySec = Number(localStorage.getItem('pswptime')) || this.options.delaySec;
+        this.setSlideshowLength(Number(localStorage.getItem(SLIDESHOW_DELAY_STORAGE_KEY)) || this.options.delayMs);
 
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
@@ -87,13 +91,13 @@ class PhotoSwipeSlideshow {
                     case 'ArrowUp':
                     case 'NumpadAdd':
                     case 'Equal':
-                        this.timer(1);
+                        this.timer(1000);
                         break;
 
                     case 'ArrowDown':
                     case 'NumpadSubtract':
                     case 'Minus':
-                        this.timer(-1);
+                        this.timer(-1000);
                         break;
                 }
             });
@@ -145,9 +149,26 @@ class PhotoSwipeSlideshow {
     }
 
     /**
+     * Update the slideshow length.
+     * 
+     * @param {number} newDelay New slideshow delay, in milliseconds.
+     */
+    setSlideshowLength(newDelay) {
+        // The `setTimeout` function requires a 32-bit positive number, in milliseconds.
+        // But 1ms isn't useful for a slideshow, so use a reasonable minimum.
+        this.options.delayMs = Math.min(Math.max(newDelay, 1000), INT32_MAX);  // 1 sec <= delay <= 24.85 days
+
+        // Save the slideshow length to Local Storage if one of the bounds has been reached.
+        // This survives page refreshes.
+        if (this.options.delayMs != newDelay) {
+            localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
+        }
+    }
+
+    /**
      * Manage the slideshow timer.
      *
-     * @param {number | undefined} lengthDelta Amount to change the slideshow length.
+     * @param {number | undefined} lengthDelta Amount to change the slideshow length, in milliseconds.
      */
     timer(lengthDelta) {
         this.resetSlideshow();
@@ -159,14 +180,14 @@ class PhotoSwipeSlideshow {
 
         // Change the slideshow length.
         if (lengthDelta) {
-            // Save the updated slideshow length.
-            this.options.delaySec = Math.max(1, this.options.delaySec + lengthDelta);
-            localStorage.setItem('pswptime', this.options.delaySec);
+            // Update the slideshow length and save it to Local Storage.
+            this.setSlideshowLength(this.options.delayMs + lengthDelta);
+            localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
 
             // Show the current slideshow length.
             const slideCounterElement = document.querySelector('.pswp__counter');
             if (slideCounterElement) {
-                slideCounterElement.innerHTML = this.options.delaySec + 's';
+                slideCounterElement.innerHTML = this.options.delayMs/1000 + 's';
             }
         }
 
@@ -174,7 +195,7 @@ class PhotoSwipeSlideshow {
             this.slideshowTimerID = setTimeout(() => {this.timer()}, 200);
         } else {
             // Start the slideshow timer and go to the next slide.
-            this.slideshowTimerID = setTimeout(() => {this.timer()}, this.options.delaySec * 1000);
+            this.slideshowTimerID = setTimeout(() => {this.timer()}, this.options.delayMs);
             if (!lengthDelta) {
                 pswp.next();
             }
@@ -191,7 +212,7 @@ class PhotoSwipeSlideshow {
         const slideshowProgressBarWrapper = document.querySelector('.pswp__time');
         if (code) {
             if (code == 2) {
-                slideshowProgressBarWrapper.innerHTML = `<div class="pswp__timer" style="transition:width ${this.options.delaySec}s;"/>`;
+                slideshowProgressBarWrapper.innerHTML = `<div class="pswp__timer" style="transition:width ${this.options.delayMs/1000}s;"/>`;
                 setTimeout(() => {this.toggleProgressBar(1)}, 100);
                 return;
             }
