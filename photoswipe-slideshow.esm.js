@@ -3,16 +3,20 @@
 // Constants
 const INT32_MAX = 2147483647;  // 2^31 - 1
 const SLIDESHOW_DELAY_STORAGE_KEY = 'pswp_delay';
+const SLIDESHOW_PROGRESS_BAR_WRAPPER_CLASS = 'pswp__progress-wrapper';
+const SLIDESHOW_PROGRESS_BAR_CLASS = 'pswp__progress-bar';
 
 /**
  * Default settings for the plugin.
  *
- * @property {number} delayMs       Slideshow delay in milliseconds.
- * @property {number} buttonOrder   Position where to place the slideshow toggle button.
+ * @property {number} delayMs               Slideshow delay in milliseconds.
+ * @property {number} buttonOrder           Position where to place the slideshow toggle button.
+ * @property {string} progressBarTransition Acceleration curve of the progress bar.
  */
 const defaultOptions = {
     delayMs: 4000,
     buttonOrder: 18, // default: counter=5, image=7, zoom=10, info=15, close=20
+    progressBarTransition: 'ease', // start slowly, speed up until the middle, then slow down
 };
 
 class PhotoSwipeSlideshow {
@@ -36,7 +40,21 @@ class PhotoSwipeSlideshow {
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
             'beforeend',
-            '<style>.pswp__timer{height:3px;background:#c00;width:0;position:fixed;bottom:0}.load .pswp__timer{width:100%}</style>',
+            (
+                `<style>\
+                    .${SLIDESHOW_PROGRESS_BAR_CLASS} {\
+                        height: 3px;\
+                        background: #c00;\
+                        width: 0;\
+                        position: fixed;\
+                        bottom: 0;\
+                    }\
+
+                    .load .${SLIDESHOW_PROGRESS_BAR_CLASS} {\
+                        width: 100%;\
+                    }\
+                </style>`
+            ).replace(/  +/g, ''),
         );
 
         // Set default parameters.
@@ -73,11 +91,11 @@ class PhotoSwipeSlideshow {
                 },
             });
 
-            // Add a wrapper for the progress bar.
+            // Add a wrapper element for the progress bar.
             pswp.ui.registerElement({
                 name: 'playtime',
-                className: 'pswp__time',
-                appendTo: 'wrapper',
+                className: SLIDESHOW_PROGRESS_BAR_WRAPPER_CLASS,
+                appendTo: 'wrapper', // add to PhotoSwipe's scroll viewport wrapper
             });
 
             // Add custom keyboard bindings.
@@ -187,27 +205,41 @@ class PhotoSwipeSlideshow {
             if (!lengthDelta) {
                 pswp.next();
             }
-            this.toggleProgressBar(2);
+            this.toggleProgressBar(true);
         }
     }
 
     /**
      * Show or hide the slideshow progress bar.
      *
-     * @param {number | undefined} code Functionality: 2==start, 1==running, 0==stop.
+     * @param {boolean | undefined} running Whether the slideshow is running.
      */
-    toggleProgressBar(code) {
-        const slideshowProgressBarWrapper = document.querySelector('.pswp__time');
-        if (code) {
-            if (code == 2) {
-                slideshowProgressBarWrapper.innerHTML = `<div class="pswp__timer" style="transition:width ${this.options.delayMs/1000}s;"/>`;
-                setTimeout(() => {this.toggleProgressBar(1)}, 100);
-                return;
-            }
-            slideshowProgressBarWrapper.classList.add('load');
-        } else {
-            slideshowProgressBarWrapper.innerHTML = '';
-            slideshowProgressBarWrapper.classList.remove('load');
+    toggleProgressBar(running) {
+        const slideshowProgressBarWrapper = document.querySelector(`.${SLIDESHOW_PROGRESS_BAR_WRAPPER_CLASS}`);
+
+        switch (running) {
+            case true:
+                // Start slideshow
+                slideshowProgressBarWrapper.innerHTML = (
+                    `<div class="${SLIDESHOW_PROGRESS_BAR_CLASS}" style="\
+                        transition-property: width;\
+                        transition-duration: ${this.options.delayMs / 1000}s;\
+                        transition-timing-function: ${this.options.progressBarTransition};\
+                    "/>`
+                ).replace(/  +/g, '');
+                setTimeout(() => { this.toggleProgressBar() }, 100);
+                break;
+
+            case false:
+                // Stop slideshow
+                slideshowProgressBarWrapper.innerHTML = '';
+                slideshowProgressBarWrapper.classList.remove('load');
+                break;
+
+            case undefined:
+                // Keep slideshow running
+                slideshowProgressBarWrapper.classList.add('load');
+                break;
         }
     }
 
@@ -257,7 +289,7 @@ class PhotoSwipeSlideshow {
      * Stop the slideshow by resetting the progress bar and timer.
      */
     resetSlideshow() {
-        this.toggleProgressBar(0);
+        this.toggleProgressBar(false);
         if (this.slideshowTimerID) {
             clearTimeout(this.slideshowTimerID);
             this.slideshowTimerID = null;
