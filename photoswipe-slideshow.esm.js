@@ -10,13 +10,15 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  * Default settings for the plugin.
  *
  * @property {number} delayMs               Slideshow delay in milliseconds.
- * @property {number} buttonOrder           Position where to place the slideshow toggle button.
+ * @property {number} buttonOrder           PhotoSwipe position for the slideshow toggle button.
+ * @property {string} progressBarPosition   CSS position for the progress bar (either "top" or "bottom").
  * @property {string} progressBarTransition Acceleration curve of the progress bar.
  */
 const defaultOptions = {
     delayMs: 4000,
-    buttonOrder: 18, // default: counter=5, image=7, zoom=10, info=15, close=20
-    progressBarTransition: 'ease', // start slowly, speed up until the middle, then slow down
+    buttonOrder: 18, // defaults: counter=5, image=7, zoom=10, info=15, close=20
+    progressBarPosition: 'bottom',
+    progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
 };
 
 class PhotoSwipeSlideshow {
@@ -44,7 +46,7 @@ class PhotoSwipeSlideshow {
                 `<style>\
                     .${PROGRESS_BAR_CLASS} {\
                         position: fixed;\
-                        bottom: 0;\
+                        ${this.options.progressBarPosition}: 0;\
 
                         width: 0;\
                         height: 0;\
