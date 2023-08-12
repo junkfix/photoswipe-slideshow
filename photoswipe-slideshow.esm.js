@@ -69,7 +69,7 @@ class PhotoSwipeSlideshow {
         this.wakeLockIsRunning = false;
         this.wakeLockSentinel = null;
         this.slideshowIsRunning = false;
-        this.slideshowTimerID = 0;
+        this.slideshowTimerID = null;
         this.lightbox = lightbox;
 
         // Set up lightbox and gallery event binds.
@@ -117,13 +117,13 @@ class PhotoSwipeSlideshow {
                     case 'ArrowUp':
                     case 'NumpadAdd':
                     case 'Equal':
-                        this.timer(1000);
+                        this.changeSlideshowLength(1000);
                         break;
 
                     case 'ArrowDown':
                     case 'NumpadSubtract':
                     case 'Minus':
-                        this.timer(-1000);
+                        this.changeSlideshowLength(-1000);
                         break;
                 }
 
@@ -149,7 +149,7 @@ class PhotoSwipeSlideshow {
 
         if (this.slideshowIsRunning) {
             // Starting the slideshow: go to next slide after some wait time.
-            this.timer();
+            this.goToNextSlideAfterTimeout();
         } else {
             // Stopping the slideshow: reset the progress bar and timer.
             this.resetSlideshow();
@@ -181,42 +181,54 @@ class PhotoSwipeSlideshow {
     }
 
     /**
-     * Manage the slideshow timer.
+     * Change the slideshow timer length.
      *
-     * @param {number | undefined} lengthDelta Amount to change the slideshow length, in milliseconds.
+     * @param {number} delta Amount to change the slideshow length, in milliseconds. Can be positive or negative.
      */
-    timer(lengthDelta) {
-        this.resetSlideshow();
-
-        // Don't restart the timer if the slideshow isn't running.
+    changeSlideshowLength(delta) {
+        // Don't do anything if the slideshow isn't running.
         if (!this.slideshowIsRunning) {
             return;
         }
 
-        // Change the slideshow length.
-        if (lengthDelta) {
-            // Update the slideshow length and save it to Local Storage.
-            this.setSlideshowLength(this.options.delayMs + lengthDelta);
-            localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
+        // Update the slideshow length and save it to Local Storage.
+        this.setSlideshowLength(this.options.delayMs + delta);
+        localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
 
-            // Show the current slideshow length.
-            const slideCounterElement = document.querySelector('.pswp__counter');
-            if (slideCounterElement) {
-                slideCounterElement.innerHTML = this.options.delayMs/1000 + 's';
-            }
+        // Show the current slideshow length.
+        const slideCounterElement = document.querySelector('.pswp__counter');
+        if (slideCounterElement) {
+            slideCounterElement.innerHTML = this.options.delayMs/1000 + 's';
         }
 
+        // Restart the slideshow.
+        this.goToNextSlideAfterTimeout();
+    }
+
+    /**
+     * Go to the next slide after waiting some time.
+     */
+    goToNextSlideAfterTimeout() {
         if (pswp.currSlide.content.isLoading()) {
-            this.slideshowTimerID = setTimeout(() => {this.timer()}, 200);
+            // Wait for the media to load, without blocking the page.
+            this.slideshowTimerID = setTimeout(() => {this.goToNextSlideAfterTimeout()}, 200);
         } else {
-            // Start the slideshow timer and go to the next slide.
-            this.slideshowTimerID = setTimeout(() => {this.timer()}, this.options.delayMs);
-            setTimeout(() => {
-                this.toggleProgressBar({running: true});
-            }, 100); // need a small delay so the browser has time to reset the progress bar
-            if (!lengthDelta) {
+            // Reset the progress bar and timer.
+            this.resetSlideshow();
+
+            // Start the slideshow timer.
+            this.slideshowTimerID = setTimeout(() => {
                 pswp.next();
-            }
+                this.goToNextSlideAfterTimeout();
+            }, this.options.delayMs);
+
+            // Show the progress bar.
+            // This needs a small delay so the browser has time to reset the progress bar.
+            setTimeout(() => {
+                if (this.slideshowIsRunning) {
+                    this.toggleProgressBar({running: true});
+                }
+            }, 100);
         }
     }
 
