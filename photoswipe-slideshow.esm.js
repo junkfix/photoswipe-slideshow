@@ -1,7 +1,7 @@
 /*! Slideshow plugin for PhotoSwipe v5.  https://github.com/dpet23/photoswipe-slideshow */
 
 // Constants
-const INT32_MAX = 2147483647;  // 2^31 - 1
+const INT32_MAX = 2147483647; // 2^31 - 1
 const SLIDESHOW_DELAY_STORAGE_KEY = 'pswp_delay';
 const PROGRESS_BAR_CLASS = 'pswp__progress-bar';
 const PROGRESS_BAR_RUNNING_CLASS = 'running';
@@ -22,7 +22,6 @@ const defaultOptions = {
 };
 
 class PhotoSwipeSlideshow {
-
     /**
      * Set up PhotoSwipe lightbox event binds.
      *
@@ -30,6 +29,7 @@ class PhotoSwipeSlideshow {
      * @param {object} options              Options to change default behaviour.
      */
     constructor(lightbox, options) {
+        this.lightbox = lightbox;
         this.options = {
             ...defaultOptions,
             ...options,
@@ -42,35 +42,32 @@ class PhotoSwipeSlideshow {
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
             'beforeend',
-            (
-                `<style>\
-                    .${PROGRESS_BAR_CLASS} {\
-                        position: fixed;\
-                        ${this.options.progressBarPosition}: 0;\
+            `<style>\
+                .${PROGRESS_BAR_CLASS} {\
+                    position: fixed;\
+                    ${this.options.progressBarPosition}: 0;\
 
-                        width: 0;\
-                        height: 0;\
-                    }\
+                    width: 0;\
+                    height: 0;\
+                }\
 
-                    .${PROGRESS_BAR_CLASS}.${PROGRESS_BAR_RUNNING_CLASS} {\
-                        width: 100%;\
-                        height: 3px;\
+                .${PROGRESS_BAR_CLASS}.${PROGRESS_BAR_RUNNING_CLASS} {\
+                    width: 100%;\
+                    height: 3px;\
 
-                        transition-property: width;
-                        transition-timing-function: ${this.options.progressBarTransition};
+                    transition-property: width;
+                    transition-timing-function: ${this.options.progressBarTransition};
 
-                        background: #c00;\
-                    }\
-                </style>`
-            ).replace(/  +/g, ''),
+                    background: #c00;\
+                }\
+            </style>`.replace(/  +/g, ''),
         );
 
         // Set default parameters.
-        this.wakeLockIsRunning = false;
-        this.wakeLockSentinel = null;
         this.slideshowIsRunning = false;
         this.slideshowTimerID = null;
-        this.lightbox = lightbox;
+        this.wakeLockIsRunning = false;
+        this.wakeLockSentinel = null;
 
         // Set up lightbox and gallery event binds.
         this.lightbox.on('init', () => {
@@ -84,7 +81,6 @@ class PhotoSwipeSlideshow {
      * @param {PhotoSwipeCore} pswp PhotoSwipe instance.
      */
     init(pswp) {
-
         // Add UI elements to an open gallery.
         pswp.on('uiRegister', () => {
             // Add a button to the PhotoSwipe UI for toggling the slideshow state.
@@ -107,28 +103,28 @@ class PhotoSwipeSlideshow {
                 className: PROGRESS_BAR_CLASS,
             });
 
-            // Add custom keyboard bindings.
+            // Add custom keyboard bindings, replacing the default bindings.
             pswp.events.add(document, 'keydown', e => {
                 switch (e.code) {
                     case 'Space':
                         this.setSlideshowState();
+                        e.preventDefault();
                         break;
 
                     case 'ArrowUp':
                     case 'NumpadAdd':
                     case 'Equal':
                         this.changeSlideshowLength(1000);
+                        e.preventDefault();
                         break;
 
                     case 'ArrowDown':
                     case 'NumpadSubtract':
                     case 'Minus':
                         this.changeSlideshowLength(-1000);
+                        e.preventDefault();
                         break;
                 }
-
-                // Don't call the default binding for the key.
-                e.preventDefault();
             });
         });
 
@@ -159,19 +155,19 @@ class PhotoSwipeSlideshow {
         document.querySelector('#pswp__icn-pause').style.display = this.slideshowIsRunning ? 'inline' : 'none';
         document.querySelector('#pswp__icn-play').style.display = this.slideshowIsRunning ? 'none' : 'inline';
 
-        // Toggle wake lock: prevent/allow the screen to turn off.
+        // Prevent or allow the screen to turn off.
         this.toggleWakeLock();
     }
 
     /**
      * Update the slideshow length.
-     * 
+     *
      * @param {number} newDelay New slideshow delay, in milliseconds.
      */
     setSlideshowLength(newDelay) {
         // The `setTimeout` function requires a 32-bit positive number, in milliseconds.
         // But 1ms isn't useful for a slideshow, so use a reasonable minimum.
-        this.options.delayMs = Math.min(Math.max(newDelay, 1000), INT32_MAX);  // 1 sec <= delay <= 24.85 days
+        this.options.delayMs = Math.min(Math.max(newDelay, 1000), INT32_MAX); // 1 sec <= delay <= 24.85 days
 
         // Save the slideshow length to Local Storage if one of the bounds has been reached.
         // This survives page refreshes.
@@ -198,7 +194,7 @@ class PhotoSwipeSlideshow {
         // Show the current slideshow length.
         const slideCounterElement = document.querySelector('.pswp__counter');
         if (slideCounterElement) {
-            slideCounterElement.innerHTML = this.options.delayMs/1000 + 's';
+            slideCounterElement.innerHTML = this.options.delayMs / 1000 + 's';
         }
 
         // Restart the slideshow.
@@ -211,7 +207,9 @@ class PhotoSwipeSlideshow {
     goToNextSlideAfterTimeout() {
         if (pswp.currSlide.content.isLoading()) {
             // Wait for the media to load, without blocking the page.
-            this.slideshowTimerID = setTimeout(() => {this.goToNextSlideAfterTimeout()}, 200);
+            this.slideshowTimerID = setTimeout(() => {
+                this.goToNextSlideAfterTimeout();
+            }, 200);
         } else {
             // Reset the progress bar and timer.
             this.resetSlideshow();
@@ -226,7 +224,7 @@ class PhotoSwipeSlideshow {
             // This needs a small delay so the browser has time to reset the progress bar.
             setTimeout(() => {
                 if (this.slideshowIsRunning) {
-                    this.toggleProgressBar({running: true});
+                    this.toggleProgressBar({ running: true });
                 }
             }, 100);
         }
@@ -296,7 +294,7 @@ class PhotoSwipeSlideshow {
      * Stop the slideshow by resetting the progress bar and timer.
      */
     resetSlideshow() {
-        this.toggleProgressBar({running: false});
+        this.toggleProgressBar({ running: false });
         if (this.slideshowTimerID) {
             clearTimeout(this.slideshowTimerID);
             this.slideshowTimerID = null;
