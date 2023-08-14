@@ -9,14 +9,14 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
 /**
  * Default settings for the plugin.
  *
- * @property {number} delayMs               Slideshow delay in milliseconds.
- * @property {number} buttonOrder           PhotoSwipe position for the slideshow toggle button.
+ * @property {number} defaultDelayMs        Slideshow delay in milliseconds.
+ * @property {number} playPauseButtonOrder  PhotoSwipe position for the slideshow toggle button.
  * @property {string} progressBarPosition   CSS position for the progress bar (either "top" or "bottom").
  * @property {string} progressBarTransition Acceleration curve of the progress bar.
  */
 const defaultOptions = {
-    delayMs: 4000,
-    buttonOrder: 18, // defaults: counter=5, image=7, zoom=10, info=15, close=20
+    defaultDelayMs: 4000,
+    playPauseButtonOrder: 18, // defaults: counter=5, image=7, zoom=10, info=15, close=20
     progressBarPosition: 'bottom',
     progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
 };
@@ -37,7 +37,9 @@ class PhotoSwipeSlideshow {
 
         // Use the stored slideshow length, if it's been saved to Local Storage.
         // Otherwise, use the length specified by the caller, or fall back to the default value.
-        this.setSlideshowLength(Number(localStorage.getItem(SLIDESHOW_DELAY_STORAGE_KEY)) || this.options.delayMs);
+        this.setSlideshowLength(
+            Number(localStorage.getItem(SLIDESHOW_DELAY_STORAGE_KEY)) || this.options.defaultDelayMs,
+        );
 
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
@@ -56,7 +58,6 @@ class PhotoSwipeSlideshow {
                     height: 3px;\
 
                     transition-property: width;
-                    transition-timing-function: ${this.options.progressBarTransition};
 
                     background: #c00;\
                 }\
@@ -87,7 +88,7 @@ class PhotoSwipeSlideshow {
             pswp.ui.registerElement({
                 name: 'playpause-button', // pswp__button--playpause-button
                 title: 'Toggle slideshow [Space] Time +/-',
-                order: this.options.buttonOrder,
+                order: this.options.playPauseButtonOrder,
                 isButton: true,
                 html: '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32"><use class="pswp__icn-shadow" xlink:href="#pswp__icn-pause"/><use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/><path id="pswp__icn-play" d="M7.4 25 25 16 7.4 6.6Z" /><path id="pswp__icn-pause" style="display:none" d="m7 7h4l0 18h-4zm14 0h4v18h-4z"/></svg>',
                 onClick: (event, el) => {
@@ -167,12 +168,12 @@ class PhotoSwipeSlideshow {
     setSlideshowLength(newDelay) {
         // The `setTimeout` function requires a 32-bit positive number, in milliseconds.
         // But 1ms isn't useful for a slideshow, so use a reasonable minimum.
-        this.options.delayMs = Math.min(Math.max(newDelay, 1000), INT32_MAX); // 1 sec <= delay <= 24.85 days
+        this.options.defaultDelayMs = Math.min(Math.max(newDelay, 1000), INT32_MAX); // 1 sec <= delay <= 24.85 days
 
         // Save the slideshow length to Local Storage if one of the bounds has been reached.
         // This survives page refreshes.
-        if (this.options.delayMs != newDelay) {
-            localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
+        if (this.options.defaultDelayMs != newDelay) {
+            localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.defaultDelayMs);
         }
     }
 
@@ -188,13 +189,13 @@ class PhotoSwipeSlideshow {
         }
 
         // Update the slideshow length and save it to Local Storage.
-        this.setSlideshowLength(this.options.delayMs + delta);
-        localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.delayMs);
+        this.setSlideshowLength(this.options.defaultDelayMs + delta);
+        localStorage.setItem(SLIDESHOW_DELAY_STORAGE_KEY, this.options.defaultDelayMs);
 
         // Show the current slideshow length.
         const slideCounterElement = document.querySelector('.pswp__counter');
         if (slideCounterElement) {
-            slideCounterElement.innerHTML = this.options.delayMs / 1000 + 's';
+            slideCounterElement.innerHTML = `${this.options.defaultDelayMs / 1000}s`;
         }
 
         // Restart the slideshow.
@@ -202,45 +203,105 @@ class PhotoSwipeSlideshow {
     }
 
     /**
+     * Calculate the time before going to the next slide.
+     *
+     * For images, use the default delay time.
+     * For videos, calculate the remaining duration.
+     *
+     * @return {number} Timeout value in milliseconds.
+     */
+    getSlideTimeout() {
+        const slideContent = pswp.currSlide.content;
+        const isVideoContent = slideContent?.data?.type === 'video';
+
+        // Calculate remaining duration for videos.
+        if (isVideoContent) {
+            const durationSec = slideContent.element.duration;
+            const currentTimeSec = slideContent.element.currentTime;
+
+            if (isNaN(durationSec) || isNaN(currentTimeSec)) {
+                // Fall back to default delay if video hasn't been loaded yet.
+                return this.options.defaultDelayMs;
+            }
+            return (durationSec - currentTimeSec) * 1000;
+        }
+
+        // Use the default delay for images.
+        return this.options.defaultDelayMs;
+    }
+
+    /**
      * Go to the next slide after waiting some time.
      */
     goToNextSlideAfterTimeout() {
-        if (pswp.currSlide.content.isLoading()) {
-            // Wait for the media to load, without blocking the page.
-            this.slideshowTimerID = setTimeout(() => {
-                this.goToNextSlideAfterTimeout();
-            }, 200);
-        } else {
-            // Reset the progress bar and timer.
-            this.resetSlideshow();
+        // Reset the progress bar and timer.
+        this.resetSlideshow();
+
+        const hasLoaded = (() => {
+            switch (pswp.currSlide.content?.data?.type) {
+                case 'video':
+                    const videoElement = pswp.currSlide.content?.element;
+                    // Wait until the video can be played smoothly:
+                    //  * Enough video data has been downloaded for playback
+                    //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/readyState)
+                    //  * More video data may still need to be downloaded
+                    //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/networkState)
+                    return (
+                        videoElement.paused === false &&
+                        videoElement.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA &&
+                        [HTMLMediaElement.NETWORK_IDLE, HTMLMediaElement.NETWORK_LOADING].includes(videoElement.networkState)
+                    );
+                default:
+                    return !pswp.currSlide.content.isLoading();
+            }
+        })();
+
+        if (hasLoaded) {
+            // Get timeout length, accounting for various media types.
+            const currentSlideTimeout = this.getSlideTimeout();
 
             // Start the slideshow timer.
             this.slideshowTimerID = setTimeout(() => {
                 pswp.next();
                 this.goToNextSlideAfterTimeout();
-            }, this.options.delayMs);
+            }, currentSlideTimeout);
 
             // Show the progress bar.
             // This needs a small delay so the browser has time to reset the progress bar.
             setTimeout(() => {
                 if (this.slideshowIsRunning) {
-                    this.toggleProgressBar({ running: true });
+                    this.toggleProgressBar(currentSlideTimeout);
                 }
             }, 100);
+        } else {
+            // Wait for the media to load, without blocking the page.
+            this.slideshowTimerID = setTimeout(() => {
+                this.goToNextSlideAfterTimeout();
+            }, 200);
         }
     }
 
     /**
      * Show or hide the slideshow progress bar.
      *
-     * @param {boolean} running Whether the slideshow is running (keyword-only).
+     * @param {number | undefined} currentSlideTimeout Timeout value in milliseconds.
      */
-    toggleProgressBar({ running }) {
+    toggleProgressBar(currentSlideTimeout) {
         const slideshowProgressBarElement = document.querySelector(`.${PROGRESS_BAR_CLASS}`);
 
-        if (running) {
+        if (currentSlideTimeout) {
             // Start slideshow
-            slideshowProgressBarElement.style.transitionDuration = `${this.options.delayMs / 1000}s`;
+
+            slideshowProgressBarElement.style.transitionTimingFunction = (() => {
+                switch (pswp.currSlide.content?.data?.type) {
+                    case 'video':
+                        return 'linear';
+                    default:
+                        return this.options.progressBarTransition;
+                }
+            })();
+
+            slideshowProgressBarElement.style.transitionDuration = `${currentSlideTimeout / 1000}s`;
             slideshowProgressBarElement.classList.add(PROGRESS_BAR_RUNNING_CLASS);
         } else {
             // Stop slideshow
@@ -294,7 +355,7 @@ class PhotoSwipeSlideshow {
      * Stop the slideshow by resetting the progress bar and timer.
      */
     resetSlideshow() {
-        this.toggleProgressBar({ running: false });
+        this.toggleProgressBar();
         if (this.slideshowTimerID) {
             clearTimeout(this.slideshowTimerID);
             this.slideshowTimerID = null;
