@@ -12,7 +12,7 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  * @property {number} defaultDelayMs        Slideshow delay in milliseconds.
  * @property {number} playPauseButtonOrder  PhotoSwipe position for the slideshow toggle button.
  * @property {string} progressBarPosition   CSS position for the progress bar (either "top" or "bottom").
- * @property {string} progressBarTransition Acceleration curve of the progress bar.
+ * @property {string} progressBarTransition Progress bar animation.
  */
 const defaultOptions = {
     defaultDelayMs: 4000,
@@ -203,6 +203,14 @@ class PhotoSwipeSlideshow {
     }
 
     /**
+     * @param {Slide | Content} content Slide or Content object.
+     * @return {boolean} Whether the given object has a video data type.
+     */
+    isVideoContent(content) {
+        return content?.data?.type === 'video';
+    }
+
+    /**
      * Calculate the time before going to the next slide.
      *
      * For images, use the default delay time.
@@ -212,10 +220,9 @@ class PhotoSwipeSlideshow {
      */
     getSlideTimeout() {
         const slideContent = pswp.currSlide.content;
-        const isVideoContent = slideContent?.data?.type === 'video';
 
         // Calculate remaining duration for videos.
-        if (isVideoContent) {
+        if (this.isVideoContent(slideContent)) {
             const durationSec = slideContent.element.duration;
             const currentTimeSec = slideContent.element.currentTime;
 
@@ -231,32 +238,38 @@ class PhotoSwipeSlideshow {
     }
 
     /**
+     * @return {boolean} Whether the content has sufficiently loaded.
+     */
+    slideContentHasLoaded() {
+        const slideContent = pswp.currSlide.content;
+
+        if (this.isVideoContent(slideContent)) {
+            // Ensure that video can be played smoothly:
+            //  * Enough data has been downloaded for playback
+            //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/readyState)
+            //  * More data may still need to be downloaded
+            //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/networkState)
+            // This requires a network with a sufficiently high download rate.
+            const videoElement = slideContent?.element;
+            return (
+                videoElement.paused === false &&
+                videoElement.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA &&
+                [HTMLMediaElement.NETWORK_IDLE, HTMLMediaElement.NETWORK_LOADING].includes(videoElement.networkState)
+            );
+        } else {
+            // For images (or other media), use PhotoSwipe's LOAD_STATE.
+            return !slideContent.isLoading();
+        }
+    }
+
+    /**
      * Go to the next slide after waiting some time.
      */
     goToNextSlideAfterTimeout() {
         // Reset the progress bar and timer.
         this.resetSlideshow();
 
-        const hasLoaded = (() => {
-            switch (pswp.currSlide.content?.data?.type) {
-                case 'video':
-                    const videoElement = pswp.currSlide.content?.element;
-                    // Wait until the video can be played smoothly:
-                    //  * Enough video data has been downloaded for playback
-                    //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/readyState)
-                    //  * More video data may still need to be downloaded
-                    //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/networkState)
-                    return (
-                        videoElement.paused === false &&
-                        videoElement.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA &&
-                        [HTMLMediaElement.NETWORK_IDLE, HTMLMediaElement.NETWORK_LOADING].includes(videoElement.networkState)
-                    );
-                default:
-                    return !pswp.currSlide.content.isLoading();
-            }
-        })();
-
-        if (hasLoaded) {
+        if (this.slideContentHasLoaded()) {
             // Get timeout length, accounting for various media types.
             const currentSlideTimeout = this.getSlideTimeout();
 
@@ -282,6 +295,20 @@ class PhotoSwipeSlideshow {
     }
 
     /**
+     * @return {string} The transition effect of the progress bar.
+     * https://developer.mozilla.org/en-US/docs/Web/CSS/transition-timing-function
+     */
+    getSlideTransition() {
+        if (this.isVideoContent(pswp.currSlide.content)) {
+            // Match the transition of a video player's seekbar.
+            return 'linear';
+        } else {
+            // Use the default animation.
+            return this.options.progressBarTransition;
+        }
+    }
+
+    /**
      * Show or hide the slideshow progress bar.
      *
      * @param {number | undefined} currentSlideTimeout Timeout value in milliseconds.
@@ -291,16 +318,7 @@ class PhotoSwipeSlideshow {
 
         if (currentSlideTimeout) {
             // Start slideshow
-
-            slideshowProgressBarElement.style.transitionTimingFunction = (() => {
-                switch (pswp.currSlide.content?.data?.type) {
-                    case 'video':
-                        return 'linear';
-                    default:
-                        return this.options.progressBarTransition;
-                }
-            })();
-
+            slideshowProgressBarElement.style.transitionTimingFunction = this.getSlideTransition();
             slideshowProgressBarElement.style.transitionDuration = `${currentSlideTimeout / 1000}s`;
             slideshowProgressBarElement.classList.add(PROGRESS_BAR_RUNNING_CLASS);
         } else {
