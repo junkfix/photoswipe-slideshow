@@ -232,9 +232,14 @@ class PhotoSwipeSlideshow {
 
         // Calculate remaining duration for videos.
         if (this.isVideoContent(slideContent)) {
-            const durationSec = slideContent.element.duration;
-            const currentTimeSec = slideContent.element.currentTime;
+            const videoElement = slideContent.element;
+            if (videoElement.paused) {
+                // Use default delay if video isn't playing.
+                return this.options.defaultDelayMs;
+            }
 
+            const durationSec = videoElement.duration;
+            const currentTimeSec = videoElement.currentTime;
             if (isNaN(durationSec) || isNaN(currentTimeSec)) {
                 // Fall back to default delay if video hasn't been loaded yet.
                 return this.options.defaultDelayMs;
@@ -259,11 +264,13 @@ class PhotoSwipeSlideshow {
             //  * More data may still need to be downloaded
             //    (https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/networkState)
             // This requires a network with a sufficiently high download rate.
-            const videoElement = slideContent?.element;
+            const videoElement = slideContent.element;
             return (
-                videoElement.paused === false &&
-                videoElement.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA &&
-                [HTMLMediaElement.NETWORK_IDLE, HTMLMediaElement.NETWORK_LOADING].includes(videoElement.networkState)
+                videoElement.ended ||
+                (videoElement.readyState === HTMLMediaElement.HAVE_ENOUGH_DATA &&
+                    [HTMLMediaElement.NETWORK_IDLE, HTMLMediaElement.NETWORK_LOADING].includes(
+                        videoElement.networkState,
+                    ))
             );
         } else {
             // For images (or other media), use PhotoSwipe's LOAD_STATE.
