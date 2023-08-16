@@ -13,12 +13,14 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  * @property {number} playPauseButtonOrder  PhotoSwipe position for the slideshow toggle button.
  * @property {string} progressBarPosition   CSS position for the progress bar (either "top" or "bottom").
  * @property {string} progressBarTransition Progress bar animation.
+ * @property {boolean} restartOnSlideChange Restart the timer on each slide change.
  */
 const defaultOptions = {
     defaultDelayMs: 4000,
     playPauseButtonOrder: 18, // defaults: counter=5, image=7, zoom=10, info=15, close=20
     progressBarPosition: 'bottom',
     progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
+    restartOnSlideChange: false,
 };
 
 class PhotoSwipeSlideshow {
@@ -127,6 +129,13 @@ class PhotoSwipeSlideshow {
                         break;
                 }
             });
+        });
+
+        // When slide is switched during the slideshow, optionally restart the slideshow.
+        this.lightbox.on('change', () => {
+            if (this.slideshowIsRunning && this.options.restartOnSlideChange) {
+                this.goToNextSlideAfterTimeout();
+            }
         });
 
         // Close the slideshow when closing PhotoSwipe.
@@ -276,7 +285,11 @@ class PhotoSwipeSlideshow {
             // Start the slideshow timer.
             this.slideshowTimerID = setTimeout(() => {
                 pswp.next();
-                this.goToNextSlideAfterTimeout();
+                if (this.options.restartOnSlideChange) {
+                    // The slideshow timer has been set by the `change` listener.
+                } else {
+                    this.goToNextSlideAfterTimeout();
+                }
             }, currentSlideTimeout);
 
             // Show the progress bar.
@@ -319,7 +332,7 @@ class PhotoSwipeSlideshow {
         if (currentSlideTimeout) {
             // Start slideshow
             slideshowProgressBarElement.style.transitionTimingFunction = this.getSlideTransition();
-            slideshowProgressBarElement.style.transitionDuration = `${currentSlideTimeout / 1000}s`;
+            slideshowProgressBarElement.style.transitionDuration = `${currentSlideTimeout}ms`;
             slideshowProgressBarElement.classList.add(PROGRESS_BAR_RUNNING_CLASS);
         } else {
             // Stop slideshow
