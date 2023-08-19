@@ -14,6 +14,7 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  * @property {string} progressBarPosition   CSS position for the progress bar (either "top" or "bottom").
  * @property {string} progressBarTransition Progress bar animation.
  * @property {boolean} restartOnSlideChange Restart the timer on each slide change.
+ * @property {Boolean} autoHideProgressBar  Whether the progress bar can be hidden along with the UI.
  */
 const defaultOptions = {
     defaultDelayMs: 4000,
@@ -21,6 +22,7 @@ const defaultOptions = {
     progressBarPosition: 'bottom',
     progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
     restartOnSlideChange: false,
+    autoHideProgressBar: true,
 };
 
 class PhotoSwipeSlideshow {
@@ -161,9 +163,12 @@ class PhotoSwipeSlideshow {
             this.resetSlideshow();
         }
 
-        // Update icon to reflect the slideshow state.
+        // Update button icon to reflect the slideshow state.
         document.querySelector('#pswp__icn-pause').style.display = this.slideshowIsRunning ? 'inline' : 'none';
         document.querySelector('#pswp__icn-play').style.display = this.slideshowIsRunning ? 'none' : 'inline';
+
+        // Optionally ensure the progress bar isn't hidden after some time of inactivity.
+        document.querySelector(`.${PROGRESS_BAR_CLASS}`).style.opacity = this.options.autoHideProgressBar ? null : 1;
 
         // Prevent or allow the screen to turn off.
         this.toggleWakeLock();
