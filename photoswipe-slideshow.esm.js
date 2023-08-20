@@ -18,9 +18,9 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  */
 const defaultOptions = {
     defaultDelayMs: 4000,
-    playPauseButtonOrder: 6, // defaults: counter=5, image=7, zoom=10, info=15, close=20
+    playPauseButtonOrder: 6,
     progressBarPosition: 'top',
-    progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
+    progressBarTransition: 'ease',
     restartOnSlideChange: false,
     autoHideProgressBar: true,
 };
@@ -87,7 +87,7 @@ class PhotoSwipeSlideshow {
         pswp.on('uiRegister', () => {
             // Add a button to the PhotoSwipe UI for toggling the slideshow state.
             pswp.ui.registerElement({
-                name: 'playpause-button', // pswp__button--playpause-button
+                name: 'playpause-button',
                 title: 'Toggle slideshow (Space)\nChange delay with +/- while running',
                 order: this.options.playPauseButtonOrder,
                 isButton: true,
@@ -108,7 +108,7 @@ class PhotoSwipeSlideshow {
                 name: 'playtime',
                 appendTo: 'wrapper', // add to PhotoSwipe's scroll viewport wrapper
                 tagName: 'div',
-                className: PROGRESS_BAR_CLASS, // pswp__progress-bar running
+                className: PROGRESS_BAR_CLASS,
             });
 
             // Add custom keyboard bindings, replacing the default bindings.
