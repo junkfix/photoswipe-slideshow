@@ -48,21 +48,7 @@ class PhotoSwipeSlideshow {
         // Add custom CSS for the progress bar.
         document.head.insertAdjacentHTML(
             'beforeend',
-            `<style>\
-                .${PROGRESS_BAR_CLASS} {\
-                    position: fixed;\
-                    ${this.options.progressBarPosition}: 0;\
-                    width: 0;\
-                    height: 0;\
-                }\
-
-                .${PROGRESS_BAR_CLASS}.${PROGRESS_BAR_RUNNING_CLASS} {\
-                    width: 100%;\
-                    height: 3px;\
-                    transition-property: width;\
-                    background: #c00;\
-                }\
-            </style>`.replace(/  +/g, ''),
+            `<style>.${PROGRESS_BAR_CLASS}{position:fixed;${this.options.progressBarPosition}:0;width:0;height:0}.${PROGRESS_BAR_CLASS}.${PROGRESS_BAR_RUNNING_CLASS}{width:100%;height:3px;transition-property:width;background:#c00}</style>`,
         );
 
         // Set default parameters.
@@ -91,13 +77,7 @@ class PhotoSwipeSlideshow {
                 title: 'Toggle slideshow (Space)\nChange delay with +/- while running',
                 order: this.options.playPauseButtonOrder,
                 isButton: true,
-                html: `\
-                    <svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32">\
-                        <use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/>\
-                        <use class="pswp__icn-shadow" xlink:href="#pswp__icn-stop"/>\
-                        <path id="pswp__icn-play" d="M9.5038 6.4009c-.7102-.4052-1.603-.4185-2.3282-.0401S6 7.4522 6 8.2272V23.905c0 .775.451 1.4874 1.1762 1.8664s1.6174.3608 2.3282-.0401l13.8234-7.8392a2.3057 2.1395 0 000-3.6527z"/>\
-                        <path id="pswp__icn-stop" style="display:none" d="M6 9A3 3 90 019 6H23A3 3 90 0126 9V23a3 3 90 01-3 3H9A3 3 90 016 23z"/>\
-                    </svg>`.replace(/  +/g, ''),
+                html: '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32"><use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/><use class="pswp__icn-shadow" xlink:href="#pswp__icn-stop"/><path id="pswp__icn-play" d="M9.5038 6.4009c-.7102-.4052-1.603-.4185-2.3282-.0401S6 7.4522 6 8.2272V23.905c0 .775.451 1.4874 1.1762 1.8664s1.6174.3608 2.3282-.0401l13.8234-7.8392a2.3057 2.1395 0 000-3.6527z"/><path id="pswp__icn-stop" style="display:none" d="M6 9A3 3 90 019 6H23A3 3 90 0126 9V23a3 3 90 01-3 3H9A3 3 90 016 23z"/></svg>',
                 onClick: (event, el) => {
                     this.setSlideshowState();
                 },
