@@ -18,8 +18,8 @@ const PROGRESS_BAR_RUNNING_CLASS = 'running';
  */
 const defaultOptions = {
     defaultDelayMs: 4000,
-    playPauseButtonOrder: 18, // defaults: counter=5, image=7, zoom=10, info=15, close=20
-    progressBarPosition: 'bottom',
+    playPauseButtonOrder: 6, // defaults: counter=5, image=7, zoom=10, info=15, close=20
+    progressBarPosition: 'top',
     progressBarTransition: 'ease', // start slowly, quickly speed up until the middle, then slow down
     restartOnSlideChange: false,
     autoHideProgressBar: true,
@@ -52,7 +52,6 @@ class PhotoSwipeSlideshow {
                 .${PROGRESS_BAR_CLASS} {\
                     position: fixed;\
                     ${this.options.progressBarPosition}: 0;\
-
                     width: 0;\
                     height: 0;\
                 }\
@@ -60,9 +59,7 @@ class PhotoSwipeSlideshow {
                 .${PROGRESS_BAR_CLASS}.${PROGRESS_BAR_RUNNING_CLASS} {\
                     width: 100%;\
                     height: 3px;\
-
-                    transition-property: width;
-
+                    transition-property: width;\
                     background: #c00;\
                 }\
             </style>`.replace(/  +/g, ''),
@@ -91,10 +88,16 @@ class PhotoSwipeSlideshow {
             // Add a button to the PhotoSwipe UI for toggling the slideshow state.
             pswp.ui.registerElement({
                 name: 'playpause-button', // pswp__button--playpause-button
-                title: 'Toggle slideshow [Space] Time +/-',
+                title: 'Toggle slideshow (Space)\nChange delay with +/- while running',
                 order: this.options.playPauseButtonOrder,
                 isButton: true,
-                html: '<svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32"><use class="pswp__icn-shadow" xlink:href="#pswp__icn-pause"/><use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/><path id="pswp__icn-play" d="M7.4 25 25 16 7.4 6.6Z" /><path id="pswp__icn-pause" style="display:none" d="m7 7h4l0 18h-4zm14 0h4v18h-4z"/></svg>',
+                html: `\
+                    <svg aria-hidden="true" class="pswp__icn" viewBox="0 0 32 32">\
+                        <use class="pswp__icn-shadow" xlink:href="#pswp__icn-play"/>\
+                        <use class="pswp__icn-shadow" xlink:href="#pswp__icn-stop"/>\
+                        <path id="pswp__icn-play" d="M9.5038 6.4009c-.7102-.4052-1.603-.4185-2.3282-.0401S6 7.4522 6 8.2272V23.905c0 .775.451 1.4874 1.1762 1.8664s1.6174.3608 2.3282-.0401l13.8234-7.8392a2.3057 2.1395 0 000-3.6527z"/>\
+                        <path id="pswp__icn-stop" style="display:none" d="M6 9A3 3 90 019 6H23A3 3 90 0126 9V23a3 3 90 01-3 3H9A3 3 90 016 23z"/>\
+                    </svg>`.replace(/  +/g, ''),
                 onClick: (event, el) => {
                     this.setSlideshowState();
                 },
@@ -105,7 +108,7 @@ class PhotoSwipeSlideshow {
                 name: 'playtime',
                 appendTo: 'wrapper', // add to PhotoSwipe's scroll viewport wrapper
                 tagName: 'div',
-                className: PROGRESS_BAR_CLASS,
+                className: PROGRESS_BAR_CLASS, // pswp__progress-bar running
             });
 
             // Add custom keyboard bindings, replacing the default bindings.
@@ -164,7 +167,7 @@ class PhotoSwipeSlideshow {
         }
 
         // Update button icon to reflect the slideshow state.
-        document.querySelector('#pswp__icn-pause').style.display = this.slideshowIsRunning ? 'inline' : 'none';
+        document.querySelector('#pswp__icn-stop').style.display = this.slideshowIsRunning ? 'inline' : 'none';
         document.querySelector('#pswp__icn-play').style.display = this.slideshowIsRunning ? 'none' : 'inline';
 
         // Optionally ensure the progress bar isn't hidden after some time of inactivity.
