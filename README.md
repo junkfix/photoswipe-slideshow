@@ -2,7 +2,7 @@
 
 Slideshow plugin for [PhotoSwipe](https://photoswipe.com/) v5
 
-**[> Plugin demo <](https://codepen.io/htmltiger/pen/ExRgvqy)**
+**[> Plugin demo <](https://codepen.io/dpet23/pen/dywPbGy)**
 
 ## Initialization
 
