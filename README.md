@@ -64,7 +64,7 @@ The `ease` animation starts slowly, quickly speeds up until the middle, then slo
 Slides with image content will use this animation, while
 slides with video content will use a `linear` transition, to match a video player's seekbar.
 
-#### `restartOnSlideChange: false`
+#### `restartOnSlideChange: true`
 
 Whether slide changes should restart the timer.
 
