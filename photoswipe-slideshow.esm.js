@@ -9,7 +9,7 @@ class PhotoSwipeSlideshow {
 			playPauseButtonOrder: 6,
 			progressBarPosition: 'top',
 			progressBarTransition: 'ease',
-			restartOnSlideChange: false,
+			restartOnSlideChange: true,
 			autoHideProgressBar: true
 		},options);
 		
