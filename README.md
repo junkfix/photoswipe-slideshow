@@ -89,3 +89,6 @@ The plugin adds elements with the following CSS attributes:
 * `Space`: Start or stop the slideshow
 
 * `+`/`-` or the Up/Down arrow keys: Change the slideshow playback speed by 1 second
+---
+
+<a href="https://www.buymeacoffee.com/htmltiger"><img src="https://www.buymeacoffee.com/assets/img/custom_images/white_img.png" alt="Buy Me A Coffee"></a>
